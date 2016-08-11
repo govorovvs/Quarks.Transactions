@@ -32,5 +32,6 @@
     },
     "tags": [ "architecture", "transactions" ]
   },
+  "title": "Quarks.Transactions",
   "version": "1.0.0-*"
 }
