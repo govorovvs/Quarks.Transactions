@@ -1,10 +1,10 @@
 {
-  "version": "1.1.0-*",
+  "version": "2.0.0-*",
 
   "dependencies": {
     "Moq": "4.5.21",
     "NUnit": "3.4.1",
-    "Quarks.Transactions": "1.1.0-*"
+    "Quarks.Transactions": "2.0.0-*"
   },
 
   "frameworks": {

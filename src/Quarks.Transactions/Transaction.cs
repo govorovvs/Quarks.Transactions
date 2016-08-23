@@ -32,7 +32,7 @@ namespace Quarks.Transactions
 
 		public IDictionary<string, IDependentTransaction> DependentTransactions { get; }
 
-		public virtual void Dispose()
+		public void Dispose()
 		{
 			Current = null;
 
