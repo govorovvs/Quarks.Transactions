@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Moq;
 using NUnit.Framework;
-using Quarks.Transactions.Impl;
 
 namespace Quarks.Transactions.Tests
 {
@@ -12,12 +11,15 @@ namespace Quarks.Transactions.Tests
 	{
 		private CancellationToken _cancellationToken;
 		private Transaction _transaction;
+		private Mock<IDependentTransaction> _mockEnlistedDependentTransaction;
 
 		[SetUp]
 		public void SetUp()
 		{
 			_transaction = new Transaction();
 			_cancellationToken = new CancellationTokenSource().Token;
+			_mockEnlistedDependentTransaction = new Mock<IDependentTransaction>();
+			_transaction.Enlist("key", _mockEnlistedDependentTransaction.Object);
 		}
 
 		[TearDown]
@@ -31,52 +33,104 @@ namespace Quarks.Transactions.Tests
 		}
 
 		[Test]
+		public void Creating_New_Transaction_In_Scope_Of_Other_One_Throws_An_Exception()
+		{
+			Assert.That(() => new Transaction(), Throws.TypeOf<InvalidOperationException>());
+		}
+
+		[Test]
 		public async Task Commits_Dependent_Transactions_On_Commit()
 		{
-			var dependentTransaction =
-				new Mock<IDependentTransaction>();
-			dependentTransaction
+			_mockEnlistedDependentTransaction
 				.Setup(x => x.CommitAsync(_cancellationToken))
 				.Returns(Task.CompletedTask);
-			_transaction.Enlist("key", dependentTransaction.Object);
-
+			
 			await _transaction.CommitAsync(_cancellationToken);
 
-			dependentTransaction.VerifyAll();
+			_mockEnlistedDependentTransaction.VerifyAll();
 		}
 
 		[Test]
 		public void Disposes_Dependent_Transactions_On_Dispose()
 		{
-			var dependentTransaction =
-				new Mock<IDependentTransaction>();
-			dependentTransaction
-				.Setup(x => x.Dispose());
-			_transaction.Enlist("key", dependentTransaction.Object);
+			_mockEnlistedDependentTransaction.Setup(x => x.Dispose());
 
 			_transaction.Dispose();
 
-			dependentTransaction.VerifyAll();
+			_mockEnlistedDependentTransaction.VerifyAll();
 		}
 
 		[Test]
 		public void Dispose_Catches_Dependent_Transaction_Exception()
 		{
-			var dependentTransaction =
-				new Mock<IDependentTransaction>();
-			dependentTransaction
+			_mockEnlistedDependentTransaction
 				.Setup(x => x.Dispose())
 				.Throws<Exception>();
-
-			_transaction.Enlist("key", dependentTransaction.Object);
 
 			Assert.DoesNotThrow(() => _transaction.Dispose());
 		}
 
 		[Test]
-		public void Creating_New_Transaction_In_Scope_Of_Other_One_Throws_An_Exception()
+		public async Task Commit_If_All_NestedTransaction_Have_Been_Committed()
 		{
-			Assert.That(() => new Transaction(), Throws.TypeOf<InvalidOperationException>());
+			_mockEnlistedDependentTransaction
+				.Setup(x => x.CommitAsync(_cancellationToken))
+				.Returns(Task.CompletedTask);
+
+			using (ITransaction transaction1 = Transaction.BeginTransaction())
+			{
+				using (ITransaction transaction2 = Transaction.BeginTransaction())
+				{
+					await transaction2.CommitAsync(_cancellationToken);
+				}
+
+				await transaction1.CommitAsync(_cancellationToken);
+			}
+
+			_mockEnlistedDependentTransaction.VerifyAll();
+		}
+
+		[Test]
+		public async Task Dispose_If_Any_Of_NestedTransaction_Has_Been_Disposed()
+		{
+			_mockEnlistedDependentTransaction.Setup(x => x.Dispose());
+
+			using (ITransaction transaction1 = Transaction.BeginTransaction())
+			{
+				Assert.That(transaction1, Is.Not.Null);
+
+				using (ITransaction transaction2 = Transaction.BeginTransaction())
+				{
+					await transaction2.CommitAsync(_cancellationToken);
+				}
+			}
+
+			_mockEnlistedDependentTransaction.VerifyAll();
+		}
+
+		[Test]
+		public async Task Dispose_If_Any_Of_NestedTransaction_Has_Not_Been_Committed_Due_To_Exception()
+		{
+			_mockEnlistedDependentTransaction.Setup(x => x.Dispose());
+
+			using (ITransaction transaction1 = Transaction.BeginTransaction())
+			{
+				try
+				{
+					using (ITransaction transaction2 = Transaction.BeginTransaction())
+					{
+						Assert.That(transaction2, Is.Not.Null);
+
+						throw new Exception();
+					}
+				}
+				catch
+				{
+					await transaction1.CommitAsync(_cancellationToken);
+				}
+			}
+
+			_mockEnlistedDependentTransaction.VerifyAll();
 		}
 	}
 }

@@ -1,10 +1,10 @@
-﻿namespace Quarks.Transactions.Impl
+﻿namespace Quarks.Transactions
 {
 	public class TransactionFactory : ITransactionFactory
 	{
 		public ITransaction Create()
 		{
-			return new Transaction();
+			return Transaction.BeginTransaction();
 		}
 	}
 }

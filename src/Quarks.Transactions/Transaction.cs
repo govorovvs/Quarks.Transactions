@@ -4,18 +4,22 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Quarks.Transactions.Impl
+namespace Quarks.Transactions
 {
-	public sealed class Transaction : ITransaction
+	public sealed class Transaction
 	{
+// ReSharper disable InconsistentNaming
 		private static readonly AsyncLocal<Transaction> _current;
+		private static readonly object _lock;
+// ReSharper enable InconsistentNaming
 
 		static Transaction()
 		{
+			_lock = new object();
 			_current = new AsyncLocal<Transaction>();
 		}
 
-		public Transaction()
+		internal Transaction()
 		{
 			if (Current != null)
 			{
@@ -28,7 +32,7 @@ namespace Quarks.Transactions.Impl
 
 		public IDictionary<string, IDependentTransaction> DependentTransactions { get; }
 
-		public void Dispose()
+		public virtual void Dispose()
 		{
 			Current = null;
 
@@ -50,18 +54,44 @@ namespace Quarks.Transactions.Impl
 			}
 		}
 
-		public static Transaction Current
-		{
-			get { return _current.Value; }
-			private set { _current.Value = value; }
-		}
-
 		public void Enlist(string key, IDependentTransaction dependentTransaction)
 		{
 			if (dependentTransaction == null)
 				throw new ArgumentNullException(nameof(dependentTransaction));
 
 			DependentTransactions.Add(key, dependentTransaction);
+		}
+
+		public static Transaction Current
+		{
+			get { return _current.Value; }
+			private set { _current.Value = value; }
+		}
+
+		public static ITransaction BeginTransaction()
+		{
+			Transaction current = GetOrCreateCurrent();
+			return new NestedTransaction(current);
+		}
+
+		internal int CommitCount;
+
+		internal int DisposeCount;
+
+		internal static Transaction GetOrCreateCurrent()
+		{
+			if (Current == null)
+			{
+				lock (_lock)
+				{
+					if (Current == null)
+					{
+						Current = new Transaction();
+					}
+				}
+			}
+
+			return Current;
 		}
 	}
 }

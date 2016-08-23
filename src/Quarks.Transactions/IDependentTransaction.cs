@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Quarks.Transactions.Impl
+namespace Quarks.Transactions
 {
 	public interface IDependentTransaction : IDisposable
 	{

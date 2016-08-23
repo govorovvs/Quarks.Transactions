@@ -1,5 +1,4 @@
 ﻿using NUnit.Framework;
-using Quarks.Transactions.Impl;
 
 namespace Quarks.Transactions.Tests
 {
@@ -19,7 +18,7 @@ namespace Quarks.Transactions.Tests
 		{
 			using (ITransaction transaction = _factory.Create())
 			{
-				Assert.IsInstanceOf<Transaction>(transaction);
+				Assert.IsInstanceOf<NestedTransaction>(transaction);
 			}
 		}
 	}
