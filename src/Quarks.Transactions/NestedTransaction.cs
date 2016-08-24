@@ -40,7 +40,7 @@ namespace Quarks.Transactions
 				return _transaction.CommitAsync(cancellationToken);
 			}
 
-			return TaskEx.CompletedTask;
+			return Task.FromResult(0);
 		}
 
 		private void ThrowIfDisposed()
