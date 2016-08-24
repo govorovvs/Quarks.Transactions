@@ -25,11 +25,8 @@ namespace Quarks.Transactions.Tests
 		[TearDown]
 		public void TearDown()
 		{
-			if (_transaction != null)
-			{
-				_transaction.Dispose();
-				_transaction = null;
-			}
+			_transaction.Dispose();
+			_transaction = null;
 		}
 
 		[Test]

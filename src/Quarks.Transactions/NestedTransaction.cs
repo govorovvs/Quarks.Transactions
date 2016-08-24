@@ -19,8 +19,9 @@ namespace Quarks.Transactions
 
 		public void Dispose()
 		{
-			ThrowIfDisposed();
-			
+			if (_disposed)
+				return;
+
 			if (Interlocked.Decrement(ref _transaction.DisposeCount) == 0)
 			{
 				_transaction.Dispose();
