@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Quarks.Transactions.Impl;
 
 namespace Quarks.Transactions
 {
@@ -39,7 +40,7 @@ namespace Quarks.Transactions
 				return _transaction.CommitAsync(cancellationToken);
 			}
 
-			return Task.CompletedTask;
+			return TaskEx.CompletedTask;
 		}
 
 		private void ThrowIfDisposed()

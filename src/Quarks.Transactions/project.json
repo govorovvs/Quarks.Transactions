@@ -1,5 +1,10 @@
 {
   "frameworks": {
+    "net45": {
+      "buildOptions": {
+        "define": [ "NET_45" ] 
+      }
+    },
     "net46": {
     },
     "netcoreapp1.0": {
@@ -33,5 +38,5 @@
     "tags": [ "architecture", "transactions" ]
   },
   "title": "Quarks.Transactions",
-  "version": "2.0.1-*"
+  "version": "2.1.0-*"
 }

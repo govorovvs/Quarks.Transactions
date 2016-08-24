@@ -3,21 +3,13 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Quarks.Transactions.Impl;
 
 namespace Quarks.Transactions
 {
 	public sealed class Transaction
 	{
-// ReSharper disable InconsistentNaming
-		private static readonly AsyncLocal<Transaction> _current;
-		private static readonly object _lock;
-// ReSharper enable InconsistentNaming
-
-		static Transaction()
-		{
-			_lock = new object();
-			_current = new AsyncLocal<Transaction>();
-		}
+		private static readonly object Lock = new object();
 
 		internal Transaction()
 		{
@@ -64,8 +56,14 @@ namespace Quarks.Transactions
 
 		public static Transaction Current
 		{
-			get { return _current.Value; }
-			private set { _current.Value = value; }
+			get { return Context.Current; }
+			private set { Context.Current = value; }
+		}
+
+		public static ITransactionContext Context
+		{
+			get { return TransactionContext.Current; }
+			set { Transaction.Context = value; }
 		}
 
 		public static ITransaction BeginTransaction()
@@ -82,7 +80,7 @@ namespace Quarks.Transactions
 		{
 			if (Current == null)
 			{
-				lock (_lock)
+				lock (Lock)
 				{
 					if (Current == null)
 					{
