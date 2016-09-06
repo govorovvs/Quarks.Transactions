@@ -5,17 +5,6 @@
         "define": [ "NET_45" ] 
       }
     },
-    "net46": {
-    },
-    "netcoreapp1.0": {
-      "dependencies": {
-        "System.Collections.Concurrent": "4.0.12",
-        "System.Runtime": "4.1.0",
-        "System.Runtime.InteropServices": "4.1.0",
-        "System.Threading": "4.0.11",
-        "System.Threading.Tasks": "4.0.11"
-      }
-    },
     "netstandard1.6": {
       "dependencies": {
         "System.Collections.Concurrent": "4.0.12",
@@ -38,5 +27,5 @@
     "tags": [ "architecture", "transactions" ]
   },
   "title": "Quarks.Transactions",
-  "version": "2.1.0-*"
+  "version": "2.2.0-*"
 }
