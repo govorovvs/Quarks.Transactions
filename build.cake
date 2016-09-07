@@ -12,15 +12,12 @@ var nugetApiKey =  Argument("apikey", "");
 //////////////////////////////////////////////////////////////////////
 
 string SOLUTION_DIR = Context.Environment.WorkingDirectory.FullPath;
-string SOLUTION_NAME = "Quarks.CQRS.sln";
-string SOLUTION_PATH = SOLUTION_DIR + "/" + SOLUTION_NAME;
 string TOOLS_DIR = SOLUTION_DIR + "/tools";
 string PACKAGES_DIR = SOLUTION_DIR + "/packages";
 string SOURCE_DIR = SOLUTION_DIR + "/src";
 string TESTS_DIR = SOLUTION_DIR + "/tests";
 string ARTIFACTS_DIR = SOLUTION_DIR + "/artifacts";
 
-string NUNIT_EXE_PATH = TOOLS_DIR + "/NUnit.ConsoleRunner/tools/nunit3-console.exe";
 string NUGET_EXE_PATH = TOOLS_DIR + "/nuget.exe";
 
 string[] projects = System.IO.Directory.GetDirectories(SOURCE_DIR);
@@ -74,12 +71,8 @@ Task("Tests")
 	{
 		foreach(var project in testProjects)
 		{
-			BuildProject(project);
+			TestProject(project);
 		}
-		
-		string pattern = TESTS_DIR + "/**/" + configuration + "/**/Quarks*.Tests.dll";
-
-		RunTests(pattern);
 	}
 );
 
@@ -122,18 +115,6 @@ Task("Publish")
 // HELPER METHODS 
 //////////////////////////////////////////////////////////////////////
 
-void RunTests(string pattern)
-{
-	NUnit3Settings settings = new NUnit3Settings 
-	{
-		ToolPath = NUNIT_EXE_PATH,
-		Agents = 1,
-		Results = ARTIFACTS_DIR + "/unit-tests.xml"
-	};
-
-	NUnit3(pattern, settings);
-}
-
 void BuildProject(string projectPath)
 {
 	var settings = new DotNetCoreBuildSettings
@@ -144,6 +125,18 @@ void BuildProject(string projectPath)
 	};
 
 	DotNetCoreBuild(projectPath, settings);
+}
+
+void TestProject(string projectPath)
+{
+	var settings = new DotNetCoreTestSettings 
+	{
+		Configuration = configuration,
+		Verbose = true,
+		NoBuild = false
+	};
+
+	DotNetCoreTest(projectPath, settings);
 }
 
 void PackProject(string projectPath)
