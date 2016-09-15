@@ -5,7 +5,7 @@
         "define": [ "NET_45" ] 
       }
     },
-    "netstandard1.6": {
+    "netstandard1.2": {
       "dependencies": {
         "System.Collections.Concurrent": "4.0.12",
         "System.Runtime": "4.1.0",
