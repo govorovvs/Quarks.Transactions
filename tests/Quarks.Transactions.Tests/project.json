@@ -3,12 +3,12 @@
     "dotnet-test-nunit": "3.4.0-beta-2",
     "Moq": "4.5.21",
     "NUnit": "3.4.1",
-    "Quarks.Transactions": "2.2.0-*"
+    "Quarks.Transactions": "2.3.0-*"
   },
   "frameworks": {
     "net46": {
     }
   },
   "testRunner": "nunit",
-  "version": "2.1.0-*"
+  "version": "1.0.0-*"
 }
