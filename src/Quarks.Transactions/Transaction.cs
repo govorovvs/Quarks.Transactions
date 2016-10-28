@@ -63,7 +63,7 @@ namespace Quarks.Transactions
 		public static ITransactionContext Context
 		{
 			get { return TransactionContext.Current; }
-			set { Transaction.Context = value; }
+			set { TransactionContext.Current = value; }
 		}
 
 		public static ITransaction BeginTransaction()

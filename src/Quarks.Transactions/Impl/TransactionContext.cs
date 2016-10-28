@@ -22,6 +22,7 @@ namespace Quarks.Transactions.Impl
 
 				return _current;
 			}
+            set { _current = value; }
 		}
 
 		private static ITransactionContext CreateContext()

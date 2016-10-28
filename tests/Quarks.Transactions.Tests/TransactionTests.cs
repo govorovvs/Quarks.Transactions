@@ -129,5 +129,15 @@ namespace Quarks.Transactions.Tests
 
 			_mockEnlistedDependentTransaction.VerifyAll();
 		}
+
+	    [Test]
+	    public void Context_Set()
+	    {
+	        ITransactionContext context = Mock.Of<ITransactionContext>();
+
+	        Transaction.Context = context;
+
+            Assert.That(Transaction.Context, Is.SameAs(context));
+	    }
 	}
 }
