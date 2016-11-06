@@ -42,7 +42,7 @@ namespace Quarks.Transactions
 		{
 			foreach (IDependentTransaction dependentTransaction in DependentTransactions.Values)
 			{
-				await dependentTransaction.CommitAsync(cancellationToken);
+				await dependentTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
 			}
 		}
 
