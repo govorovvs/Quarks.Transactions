@@ -2,7 +2,7 @@
   "frameworks": {
     "net45": {
       "buildOptions": {
-        "define": [ "NET_45" ] 
+        "define": ["NET_45"]
       }
     },
     "netstandard1.3": {

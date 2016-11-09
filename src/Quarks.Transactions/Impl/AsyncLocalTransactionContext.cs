@@ -4,8 +4,7 @@ using System.Threading;
 
 namespace Quarks.Transactions.Impl
 {
-
-	public class AsyncLocalTransactionContext : ITransactionContext
+	internal sealed class AsyncLocalTransactionContext : ITransactionContext
 	{
 		private readonly AsyncLocal<Transaction> _current = new AsyncLocal<Transaction>();
 

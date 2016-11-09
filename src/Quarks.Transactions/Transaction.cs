@@ -10,6 +10,7 @@ namespace Quarks.Transactions
 	public sealed class Transaction
 	{
 		private static readonly object Lock = new object();
+	    private readonly ConcurrentDictionary<string, IDependentTransaction> _dependentTransactions;
 
 		internal Transaction()
 		{
@@ -18,17 +19,20 @@ namespace Quarks.Transactions
 				throw new InvalidOperationException("Nested transactions aren't supported");
 			}
 
-			DependentTransactions = new ConcurrentDictionary<string, IDependentTransaction>();
+            _dependentTransactions = new ConcurrentDictionary<string, IDependentTransaction>();
 			Current = this;
 		}
+#if !NET_45
+        public IReadOnlyDictionary<string, IDependentTransaction> DependentTransactions => _dependentTransactions;
+#else
+	    public IDictionary<string, IDependentTransaction> DependentTransactions => _dependentTransactions;
+#endif
 
-		public IDictionary<string, IDependentTransaction> DependentTransactions { get; }
-
-		public void Dispose()
+        public void Dispose()
 		{
 			Current = null;
 
-			foreach (IDependentTransaction dependentTransaction in DependentTransactions.Values)
+			foreach (IDependentTransaction dependentTransaction in _dependentTransactions.Values)
 				try
 				{
 					dependentTransaction.Dispose();
@@ -40,21 +44,21 @@ namespace Quarks.Transactions
 
 		public async Task CommitAsync(CancellationToken cancellationToken)
 		{
-			foreach (IDependentTransaction dependentTransaction in DependentTransactions.Values)
+			foreach (IDependentTransaction dependentTransaction in _dependentTransactions.Values)
 			{
 				await dependentTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
 			}
 		}
 
-		public void Enlist(string key, IDependentTransaction dependentTransaction)
-		{
-			if (dependentTransaction == null)
-				throw new ArgumentNullException(nameof(dependentTransaction));
+	    public void Enlist(string key, IDependentTransaction dependentTransaction)
+	    {
+	        if (dependentTransaction == null)
+	            throw new ArgumentNullException(nameof(dependentTransaction));
 
-			DependentTransactions.Add(key, dependentTransaction);
-		}
+	        _dependentTransactions.AddOrUpdate(key, dependentTransaction, (k, v) => v);
+	    }
 
-		public static Transaction Current
+	    public static Transaction Current
 		{
 			get { return Context.Current; }
 			private set { Context.Current = value; }

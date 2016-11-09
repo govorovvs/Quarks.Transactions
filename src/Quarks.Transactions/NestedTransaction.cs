@@ -1,11 +1,10 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Quarks.Transactions.Impl;
 
 namespace Quarks.Transactions
 {
-	internal class NestedTransaction : ITransaction
+	internal sealed class NestedTransaction : ITransaction
 	{
 		private readonly Transaction _transaction;
 		private bool _disposed;
