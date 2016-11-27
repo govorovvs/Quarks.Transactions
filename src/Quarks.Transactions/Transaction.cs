@@ -7,28 +7,26 @@ using Quarks.Transactions.Impl;
 
 namespace Quarks.Transactions
 {
-	public sealed class Transaction
+	public sealed class Transaction : ITransaction
 	{
-		private static readonly object Lock = new object();
+	    private readonly ConcurrentDictionary<string, IDependentTransaction> _dependentTransactions;
 
 		internal Transaction()
 		{
-			if (Current != null)
-			{
-				throw new InvalidOperationException("Nested transactions aren't supported");
-			}
-
-			DependentTransactions = new ConcurrentDictionary<string, IDependentTransaction>();
-			Current = this;
+			_dependentTransactions = new ConcurrentDictionary<string, IDependentTransaction>();
 		}
 
-		public IDictionary<string, IDependentTransaction> DependentTransactions { get; }
+#if NET_45
+        public IDictionary<string, IDependentTransaction> DependentTransactions => _dependentTransactions;
+#else
+        public IReadOnlyDictionary<string, IDependentTransaction> DependentTransactions => _dependentTransactions;
+#endif
 
-		public void Dispose()
+        public void Dispose()
 		{
 			Current = null;
 
-			foreach (IDependentTransaction dependentTransaction in DependentTransactions.Values)
+			foreach (IDependentTransaction dependentTransaction in _dependentTransactions.Values)
 				try
 				{
 					dependentTransaction.Dispose();
@@ -40,10 +38,14 @@ namespace Quarks.Transactions
 
 		public async Task CommitAsync(CancellationToken cancellationToken)
 		{
-			foreach (IDependentTransaction dependentTransaction in DependentTransactions.Values)
+			foreach (IDependentTransaction dependentTransaction in _dependentTransactions.Values)
 			{
-				await dependentTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
-			}
+#if NET_40
+			    await dependentTransaction.CommitAsync(cancellationToken);
+#else
+                await dependentTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+#endif
+            }
 		}
 
 		public void Enlist(string key, IDependentTransaction dependentTransaction)
@@ -51,7 +53,7 @@ namespace Quarks.Transactions
 			if (dependentTransaction == null)
 				throw new ArgumentNullException(nameof(dependentTransaction));
 
-			DependentTransactions.Add(key, dependentTransaction);
+			_dependentTransactions.AddOrUpdate(key, dependentTransaction, (k,v) => v);
 		}
 
 		public static Transaction Current
@@ -66,30 +68,14 @@ namespace Quarks.Transactions
 			set { TransactionContext.Current = value; }
 		}
 
-		public static ITransaction BeginTransaction()
+		public static Transaction BeginTransaction()
 		{
-			Transaction current = GetOrCreateCurrent();
-			return new NestedTransaction(current);
-		}
+            if (Current != null)
+            {
+                throw new InvalidOperationException("Nested transactions aren't supported");
+            }
 
-		internal int CommitCount;
-
-		internal int DisposeCount;
-
-		internal static Transaction GetOrCreateCurrent()
-		{
-			if (Current == null)
-			{
-				lock (Lock)
-				{
-					if (Current == null)
-					{
-						Current = new Transaction();
-					}
-				}
-			}
-
-			return Current;
-		}
+            return Current = new Transaction();
+        }
 	}
 }
