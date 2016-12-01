@@ -2,28 +2,12 @@ namespace Quarks.Transactions.Impl
 {
 	internal static class TransactionContext
 	{
-		private static readonly object Lock = new object();
-		private static volatile ITransactionContext _current;
+	    static TransactionContext()
+	    {
+            Current = CreateContext();
+        }
 
-		public static ITransactionContext Current
-		{
-			get
-			{
-				if (_current == null)
-				{
-					lock (Lock)
-					{
-						if (_current == null)
-						{
-							_current = CreateContext();
-						}
-					}
-				}
-
-				return _current;
-			}
-            set { _current = value; }
-		}
+        public static ITransactionContext Current { get; set; }
 
 		private static ITransactionContext CreateContext()
 		{
