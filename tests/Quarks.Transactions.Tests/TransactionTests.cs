@@ -25,7 +25,7 @@ namespace Quarks.Transactions.Tests
 		[TearDown]
 		public void TearDown()
 		{
-			_transaction.Dispose();
+			((ITransaction)_transaction).Dispose();
 			_transaction = null;
 		}
 
@@ -42,7 +42,7 @@ namespace Quarks.Transactions.Tests
 				.Setup(x => x.CommitAsync(_cancellationToken))
 				.Returns(Task.CompletedTask);
 			
-			await _transaction.CommitAsync(_cancellationToken);
+			await ((ITransaction)_transaction).CommitAsync(_cancellationToken);
 
 			_mockEnlistedDependentTransaction.VerifyAll();
 		}
@@ -52,7 +52,7 @@ namespace Quarks.Transactions.Tests
 		{
 			_mockEnlistedDependentTransaction.Setup(x => x.Dispose());
 
-			_transaction.Dispose();
+            ((ITransaction)_transaction).Dispose();
 
 			_mockEnlistedDependentTransaction.VerifyAll();
 		}
@@ -66,7 +66,7 @@ namespace Quarks.Transactions.Tests
 		        .Throws(exception);
 
 		    var result =
-		        Assert.Throws<AggregateException>(() => _transaction.Dispose());
+		        Assert.Throws<AggregateException>(() => ((ITransaction)_transaction).Dispose());
             Assert.That(result.InnerExceptions, Is.EquivalentTo(new[] {exception}));
 		}
 

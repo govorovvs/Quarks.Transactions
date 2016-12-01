@@ -9,7 +9,7 @@ namespace Quarks.Transactions
 {
 	public sealed class Transaction : ITransaction
 	{
-	    private readonly ConcurrentDictionary<string, IDependentTransaction> _dependentTransactions;
+        private readonly ConcurrentDictionary<string, IDependentTransaction> _dependentTransactions;
 
 		internal Transaction()
 		{
@@ -22,7 +22,7 @@ namespace Quarks.Transactions
         public IReadOnlyDictionary<string, IDependentTransaction> DependentTransactions => _dependentTransactions;
 #endif
 
-        public void Dispose()
+        void IDisposable.Dispose()
 		{
 			Current = null;
 
@@ -41,7 +41,7 @@ namespace Quarks.Transactions
                 throw new AggregateException(exceptions);
         }
 
-		public async Task CommitAsync(CancellationToken cancellationToken)
+		async Task ITransaction.CommitAsync(CancellationToken cancellationToken)
 		{
 			foreach (IDependentTransaction dependentTransaction in _dependentTransactions.Values)
 			{
