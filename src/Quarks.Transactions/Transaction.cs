@@ -26,15 +26,20 @@ namespace Quarks.Transactions
 		{
 			Current = null;
 
+            var exceptions = new List<Exception>();
 			foreach (IDependentTransaction dependentTransaction in _dependentTransactions.Values)
 				try
 				{
 					dependentTransaction.Dispose();
 				}
-				catch
+				catch(Exception exception)
 				{
+                    exceptions.Add(exception);
 				}
-		}
+
+            if (exceptions.Count != 0)
+                throw new AggregateException(exceptions);
+        }
 
 		public async Task CommitAsync(CancellationToken cancellationToken)
 		{

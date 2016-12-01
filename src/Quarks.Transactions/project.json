@@ -9,7 +9,8 @@
       "dependencies": {
         "System.Collections.Concurrent": "4.3.0",
         "System.Runtime.InteropServices": "4.3.0",
-        "System.Threading": "4.3.0"
+        "System.Threading": "4.3.0",
+        "System.Collections": "4.3.0"
       }
     }
   },

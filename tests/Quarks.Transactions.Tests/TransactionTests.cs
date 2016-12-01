@@ -58,13 +58,16 @@ namespace Quarks.Transactions.Tests
 		}
 
 		[Test]
-		public void Dispose_Catches_Dependent_Transaction_Exception()
+		public void Dispose_Aggregates_Dependent_Transactions_Exceptions()
 		{
-			_mockEnlistedDependentTransaction
-				.Setup(x => x.Dispose())
-				.Throws<Exception>();
+            var exception = new Exception();
+		    _mockEnlistedDependentTransaction
+		        .Setup(x => x.Dispose())
+		        .Throws(exception);
 
-			Assert.DoesNotThrow(() => _transaction.Dispose());
+		    var result =
+		        Assert.Throws<AggregateException>(() => _transaction.Dispose());
+            Assert.That(result.InnerExceptions, Is.EquivalentTo(new[] {exception}));
 		}
 
 	    [Test]
