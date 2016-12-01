@@ -51,11 +51,7 @@ namespace Quarks.Transactions
 
             foreach (IDependentTransaction dependentTransaction in _dependentTransactions.Values)
 			{
-#if NET_40
-			    await dependentTransaction.CommitAsync(cancellationToken);
-#else
                 await dependentTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
-#endif
             }
 		}
 
