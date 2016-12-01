@@ -68,6 +68,8 @@ namespace Quarks.Transactions.Tests
 		    var result =
 		        Assert.Throws<AggregateException>(() => ((ITransaction)_transaction).Dispose());
             Assert.That(result.InnerExceptions, Is.EquivalentTo(new[] {exception}));
+
+            _mockEnlistedDependentTransaction.Reset();
 		}
 
 	    [Test]

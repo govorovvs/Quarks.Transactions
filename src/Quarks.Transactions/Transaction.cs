@@ -9,11 +9,13 @@ namespace Quarks.Transactions
 {
 	public sealed class Transaction : ITransaction
 	{
+	    private bool _disposed;
         private readonly ConcurrentDictionary<string, IDependentTransaction> _dependentTransactions;
 
 		internal Transaction()
 		{
 			_dependentTransactions = new ConcurrentDictionary<string, IDependentTransaction>();
+		    _disposed = false;
 		}
 
 #if NET_45
@@ -39,11 +41,15 @@ namespace Quarks.Transactions
 
             if (exceptions.Count != 0)
                 throw new AggregateException(exceptions);
-        }
+
+            _disposed = true;
+		}
 
 		async Task ITransaction.CommitAsync(CancellationToken cancellationToken)
 		{
-			foreach (IDependentTransaction dependentTransaction in _dependentTransactions.Values)
+            ThrowIfDisposed();
+
+            foreach (IDependentTransaction dependentTransaction in _dependentTransactions.Values)
 			{
 #if NET_40
 			    await dependentTransaction.CommitAsync(cancellationToken);
@@ -58,6 +64,7 @@ namespace Quarks.Transactions
 			if (dependentTransaction == null)
 				throw new ArgumentNullException(nameof(dependentTransaction));
 
+            ThrowIfDisposed();
 			_dependentTransactions.AddOrUpdate(key, dependentTransaction, (k,v) => v);
 		}
 
@@ -87,5 +94,11 @@ namespace Quarks.Transactions
 
             return Current = new Transaction();
         }
+
+	    private void ThrowIfDisposed()
+	    {
+	        if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
+	    }
 	}
 }
