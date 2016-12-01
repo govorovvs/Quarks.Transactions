@@ -18,7 +18,7 @@ namespace Quarks.Transactions.Tests
 		{
 			using (ITransaction transaction = _factory.Create())
 			{
-				Assert.IsInstanceOf<NestedTransaction>(transaction);
+				Assert.IsInstanceOf<Transaction>(transaction);
 			}
 		}
 	}

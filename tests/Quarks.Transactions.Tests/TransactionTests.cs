@@ -16,7 +16,7 @@ namespace Quarks.Transactions.Tests
 		[SetUp]
 		public void SetUp()
 		{
-			_transaction = new Transaction();
+			_transaction = Transaction.BeginTransaction();
 			_cancellationToken = new CancellationTokenSource().Token;
 			_mockEnlistedDependentTransaction = new Mock<IDependentTransaction>();
 			_transaction.Enlist("key", _mockEnlistedDependentTransaction.Object);
@@ -32,7 +32,7 @@ namespace Quarks.Transactions.Tests
 		[Test]
 		public void Creating_New_Transaction_In_Scope_Of_Other_One_Throws_An_Exception()
 		{
-			Assert.That(() => new Transaction(), Throws.TypeOf<InvalidOperationException>());
+			Assert.That(Transaction.BeginTransaction, Throws.TypeOf<InvalidOperationException>());
 		}
 
 		[Test]
@@ -65,69 +65,6 @@ namespace Quarks.Transactions.Tests
 				.Throws<Exception>();
 
 			Assert.DoesNotThrow(() => _transaction.Dispose());
-		}
-
-		[Test]
-		public async Task Commit_If_All_NestedTransaction_Have_Been_Committed()
-		{
-			_mockEnlistedDependentTransaction
-				.Setup(x => x.CommitAsync(_cancellationToken))
-				.Returns(Task.CompletedTask);
-
-			using (ITransaction transaction1 = Transaction.BeginTransaction())
-			{
-				using (ITransaction transaction2 = Transaction.BeginTransaction())
-				{
-					await transaction2.CommitAsync(_cancellationToken);
-				}
-
-				await transaction1.CommitAsync(_cancellationToken);
-			}
-
-			_mockEnlistedDependentTransaction.VerifyAll();
-		}
-
-		[Test]
-		public async Task Dispose_If_Any_Of_NestedTransaction_Has_Been_Disposed()
-		{
-			_mockEnlistedDependentTransaction.Setup(x => x.Dispose());
-
-			using (ITransaction transaction1 = Transaction.BeginTransaction())
-			{
-				Assert.That(transaction1, Is.Not.Null);
-
-				using (ITransaction transaction2 = Transaction.BeginTransaction())
-				{
-					await transaction2.CommitAsync(_cancellationToken);
-				}
-			}
-
-			_mockEnlistedDependentTransaction.VerifyAll();
-		}
-
-		[Test]
-		public async Task Dispose_If_Any_Of_NestedTransaction_Has_Not_Been_Committed_Due_To_Exception()
-		{
-			_mockEnlistedDependentTransaction.Setup(x => x.Dispose());
-
-			using (ITransaction transaction1 = Transaction.BeginTransaction())
-			{
-				try
-				{
-					using (ITransaction transaction2 = Transaction.BeginTransaction())
-					{
-						Assert.That(transaction2, Is.Not.Null);
-
-						throw new Exception();
-					}
-				}
-				catch
-				{
-					await transaction1.CommitAsync(_cancellationToken);
-				}
-			}
-
-			_mockEnlistedDependentTransaction.VerifyAll();
 		}
 
 	    [Test]
