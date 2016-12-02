@@ -26,7 +26,10 @@ namespace Quarks.Transactions
 
         void IDisposable.Dispose()
 		{
-			Current = null;
+            if (_disposed)
+                return;
+
+            Current = null;
 
             var exceptions = new List<Exception>();
 			foreach (IDependentTransaction dependentTransaction in _dependentTransactions.Values)

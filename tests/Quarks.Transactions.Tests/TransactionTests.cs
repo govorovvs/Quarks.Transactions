@@ -57,6 +57,17 @@ namespace Quarks.Transactions.Tests
 			_mockEnlistedDependentTransaction.VerifyAll();
 		}
 
+	    [Test]
+	    public void Disposes_Ones()
+	    {
+            _mockEnlistedDependentTransaction.Setup(x => x.Dispose());
+
+            ((ITransaction)_transaction).Dispose();
+            ((ITransaction)_transaction).Dispose();
+
+            _mockEnlistedDependentTransaction.Verify(x => x.Dispose(), Times.Once);
+        }
+
 		[Test]
 		public void Dispose_Aggregates_Dependent_Transactions_Exceptions()
 		{
