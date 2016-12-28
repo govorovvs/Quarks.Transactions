@@ -2,14 +2,9 @@ namespace Quarks.Transactions.Context
 {
 	internal static class TransactionContext
 	{
-	    static TransactionContext()
-	    {
-            Current = CreateContext();
-        }
-
         public static ITransactionContext Current { get; set; }
 
-		private static ITransactionContext CreateContext()
+		internal static ITransactionContext CreateDefault()
 		{
 #if NET_45
 			return new CallContextTransactionContext();

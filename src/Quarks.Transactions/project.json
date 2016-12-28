@@ -14,6 +14,9 @@
       }
     }
   },
+  "dependencies": {
+    "Microsoft.Extensions.DependencyInjection.Abstractions": "1.1.0"
+  },
   "packOptions": {
     "authors": [ "victor.govorov" ],
     "iconUrl": "https://github.com/govorovvs/Quarks.Transactions/blob/master/logo.png?raw=true",

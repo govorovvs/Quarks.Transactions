@@ -8,7 +8,7 @@ namespace Quarks.Transactions.Context
 	{
 		private static readonly string Key = typeof(Transaction).FullName;
 
-		public Transaction Current
+		public Transaction Transaction
 		{
 			get { return (Transaction) CallContext.LogicalGetData(Key); }
 			set { CallContext.LogicalSetData(Key, value); }

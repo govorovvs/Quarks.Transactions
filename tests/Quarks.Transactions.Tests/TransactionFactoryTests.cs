@@ -1,4 +1,5 @@
 ﻿using NUnit.Framework;
+using Quarks.Transactions.Impl;
 
 namespace Quarks.Transactions.Tests
 {
