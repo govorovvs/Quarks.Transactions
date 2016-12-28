@@ -94,5 +94,28 @@ namespace Quarks.Transactions.Tests
 
             _mockEnlistedDependentTransaction.Reset();
 		}
-	}
+
+	    [Test]
+	    public void Commit_Throws_An_Exception_If_It_Was_Already_Disposed()
+	    {
+	        ((ITransaction)_transaction).Dispose();
+
+	        var exception = Assert.ThrowsAsync<ObjectDisposedException>(
+	            () => ((ITransaction) _transaction).CommitAsync(_cancellationToken));
+
+            Assert.That(exception.ObjectName, Is.EqualTo(typeof(Transaction).Name));
+	    }
+
+	    [Test]
+	    public void Enlist_Throws_An_Exception_If_It_Was_Already_Disposed()
+	    {
+            ((ITransaction)_transaction).Dispose();
+
+            var exception = Assert.Throws<ObjectDisposedException>(
+               () => _transaction.Enlist("key", _mockEnlistedDependentTransaction.Object));
+
+            Assert.That(exception.ObjectName, Is.EqualTo(typeof(Transaction).Name));
+        }
+
+    }
 }
