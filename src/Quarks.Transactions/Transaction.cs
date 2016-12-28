@@ -65,11 +65,11 @@ namespace Quarks.Transactions
 
 		public void Enlist(string key, IDependentTransaction dependentTransaction)
 		{
-			if (dependentTransaction == null)
-				throw new ArgumentNullException(nameof(dependentTransaction));
+            if (string.IsNullOrWhiteSpace(key)) throw new ArgumentNullException(nameof(key));
+            if (dependentTransaction == null) throw new ArgumentNullException(nameof(dependentTransaction));
 
             ThrowIfDisposed();
-			_dependentTransactions.AddOrUpdate(key, dependentTransaction, (k,v) => v);
+			_dependentTransactions.AddOrUpdate(key, dependentTransaction, (k,v) => dependentTransaction);
 		}
 
 		public static Transaction Current

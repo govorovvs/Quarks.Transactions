@@ -37,7 +37,7 @@ namespace Quarks.Transactions.Tests
                     options.Context = context;
                 });
 
-            Assert.AreEqual(context, TransactionContext.Current);
+            Assert.That(TransactionContext.Current, Is.EqualTo(context));
         }
     }
 }

@@ -117,5 +117,33 @@ namespace Quarks.Transactions.Tests
             Assert.That(exception.ObjectName, Is.EqualTo(typeof(Transaction).Name));
         }
 
+        [TestCase(null)]
+        [TestCase("")]
+        [TestCase(" ")]
+        public void Enlist_Throws_An_Exception_For_Null_Key(string key)
+	    {
+            Assert.Throws<ArgumentNullException>(
+              () => _transaction.Enlist(key, _mockEnlistedDependentTransaction.Object));
+        }
+
+        [Test]
+        public void Enlist_Throws_An_Exception_For_Null_Value()
+        {
+            Assert.Throws<ArgumentNullException>(
+              () => _transaction.Enlist("key", null));
+        }
+
+	    [Test]
+	    public void Enlist_Updates_Value_For_Existing_Key()
+	    {
+	        string key = Guid.NewGuid().ToString();
+	        var dependentTransaction1 = Mock.Of<IDependentTransaction>();
+            var dependentTransaction2 = Mock.Of<IDependentTransaction>();
+            _transaction.Enlist(key, dependentTransaction1);
+
+            _transaction.Enlist(key, dependentTransaction2);
+
+            Assert.That(_transaction.DependentTransactions[key], Is.SameAs(dependentTransaction2));
+        }
     }
 }
