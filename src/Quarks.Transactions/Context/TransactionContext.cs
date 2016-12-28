@@ -1,4 +1,4 @@
-namespace Quarks.Transactions.Impl
+namespace Quarks.Transactions.Context
 {
 	internal static class TransactionContext
 	{

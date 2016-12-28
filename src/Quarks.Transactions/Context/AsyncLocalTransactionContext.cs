@@ -2,7 +2,7 @@
 
 using System.Threading;
 
-namespace Quarks.Transactions.Impl
+namespace Quarks.Transactions.Context
 {
 	internal sealed class AsyncLocalTransactionContext : ITransactionContext
 	{

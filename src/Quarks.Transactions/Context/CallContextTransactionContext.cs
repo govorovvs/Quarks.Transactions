@@ -2,7 +2,7 @@
 
 using System.Runtime.Remoting.Messaging;
 
-namespace Quarks.Transactions.Impl
+namespace Quarks.Transactions.Context
 {
 	internal sealed class CallContextTransactionContext : ITransactionContext
 	{
