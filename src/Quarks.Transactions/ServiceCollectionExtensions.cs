@@ -17,13 +17,19 @@ namespace Quarks.Transactions
             if (services == null) throw new ArgumentNullException(nameof(services));
             if (setupAction == null) throw new ArgumentNullException(nameof(setupAction));
 
-            var options = new TransactionOptions();
-            setupAction(options);
+            TransactionOptions options = CreateOptions(setupAction);
 
             services.AddTransient<ITransactionFactory, TransactionFactory>();
 
             TransactionContext.Current = options.Context;
             return services;
+        }
+
+        private static TransactionOptions CreateOptions(Action<TransactionOptions> setupAction)
+        {
+            var options = new TransactionOptions();
+            setupAction(options);
+            return options;
         }
     }
 }
