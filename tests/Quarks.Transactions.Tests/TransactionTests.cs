@@ -36,7 +36,7 @@ namespace Quarks.Transactions.Tests
 		}
 
 		[Test]
-		public async Task Commits_Dependent_Transactions_On_Commit()
+		public async Task Commits_Dependent_Transactions_On_Async_Commit()
 		{
 			_mockEnlistedDependentTransaction
 				.Setup(x => x.CommitAsync(_cancellationToken))
@@ -47,7 +47,19 @@ namespace Quarks.Transactions.Tests
 			_mockEnlistedDependentTransaction.VerifyAll();
 		}
 
-		[Test]
+        [Test]
+        public void Commits_Dependent_Transactions_On_Commit()
+        {
+            _mockEnlistedDependentTransaction
+                .Setup(x => x.CommitAsync(CancellationToken.None))
+                .Returns(Task.CompletedTask);
+
+            ((ITransaction)_transaction).Commit();
+
+            _mockEnlistedDependentTransaction.VerifyAll();
+        }
+
+        [Test]
 		public void Disposes_Dependent_Transactions_On_Dispose()
 		{
 			_mockEnlistedDependentTransaction.Setup(x => x.Dispose());

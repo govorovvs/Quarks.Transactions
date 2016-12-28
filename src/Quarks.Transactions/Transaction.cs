@@ -48,6 +48,11 @@ namespace Quarks.Transactions
             _disposed = true;
 		}
 
+	    void ITransaction.Commit()
+	    {
+	        ((ITransaction)this).CommitAsync(CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
+	    }
+
 		async Task ITransaction.CommitAsync(CancellationToken cancellationToken)
 		{
             ThrowIfDisposed();
