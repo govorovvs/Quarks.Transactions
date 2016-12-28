@@ -6,6 +6,6 @@ namespace Quarks.Transactions
 {
     public interface ITransaction : IDisposable
     {
-		Task CommitAsync(CancellationToken ct);
+		Task CommitAsync(CancellationToken cancellationToken = default(CancellationToken));
 	}
 }
