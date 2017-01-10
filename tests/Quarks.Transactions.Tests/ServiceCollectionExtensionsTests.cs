@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using NUnit.Framework;
 using Quarks.Transactions.Context;
@@ -18,12 +19,24 @@ namespace Quarks.Transactions.Tests
         }
 
         [Test]
-        public void Registers_Factory()
+        public void AddTransactions_Adds_TransactionFactory()
         {
             _services.AddTransactions();
 
             var factory = _services.BuildServiceProvider().GetService<ITransactionFactory>();
             Assert.IsInstanceOf<TransactionFactory>(factory);
+        }
+
+        [Test]
+        public void AddTransactions_Throws_An_Exception_For_Null_Services()
+        {
+            Assert.Throws<ArgumentNullException>(() => ((IServiceCollection) null).AddTransactions());
+        }
+
+        [Test]
+        public void AddTransactions_Throws_An_Exception_For_Null_Options()
+        {
+            Assert.Throws<ArgumentNullException>(() => _services.AddTransactions(null));
         }
 
         [Test]
