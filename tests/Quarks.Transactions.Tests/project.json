@@ -2,8 +2,8 @@
   "dependencies": {
     "dotnet-test-nunit": "3.4.0-beta-3",
     "Microsoft.Extensions.DependencyInjection": "1.1.0",
-    "Moq": "4.5.29",
-    "NUnit": "3.5.0",
+    "Moq": "4.5.30",
+    "NUnit": "3.6.0",
     "Quarks.Transactions": "2.4.0-*"
   },
   "frameworks": {

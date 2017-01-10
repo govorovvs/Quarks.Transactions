@@ -12,6 +12,7 @@ namespace Quarks.Transactions.Tests
 		private CancellationToken _cancellationToken;
 		private Transaction _transaction;
 		private Mock<IDependentTransaction> _mockEnlistedDependentTransaction;
+	    private const string Key = "key";
 
 		[SetUp]
 		public void SetUp()
@@ -19,7 +20,7 @@ namespace Quarks.Transactions.Tests
 			_transaction = Transaction.BeginTransaction();
 			_cancellationToken = new CancellationTokenSource().Token;
 			_mockEnlistedDependentTransaction = new Mock<IDependentTransaction>();
-			_transaction.Enlist("key", _mockEnlistedDependentTransaction.Object);
+			_transaction.Enlist(Key, _mockEnlistedDependentTransaction.Object);
 		}
 
 		[TearDown]
@@ -112,7 +113,7 @@ namespace Quarks.Transactions.Tests
             ((ITransaction)_transaction).Dispose();
 
             var exception = Assert.Throws<ObjectDisposedException>(
-               () => _transaction.Enlist("key", _mockEnlistedDependentTransaction.Object));
+               () => _transaction.Enlist(Key, _mockEnlistedDependentTransaction.Object));
 
             Assert.That(exception.ObjectName, Is.EqualTo(typeof(Transaction).Name));
         }
@@ -130,7 +131,7 @@ namespace Quarks.Transactions.Tests
         public void Enlist_Throws_An_Exception_For_Null_Value()
         {
             Assert.Throws<ArgumentNullException>(
-              () => _transaction.Enlist("key", null));
+              () => _transaction.Enlist(Key, null));
         }
 
 	    [Test]
@@ -144,6 +145,52 @@ namespace Quarks.Transactions.Tests
             _transaction.Enlist(key, dependentTransaction2);
 
             Assert.That(_transaction.DependentTransactions[key], Is.SameAs(dependentTransaction2));
+        }
+
+        [TestCase(null)]
+        [TestCase("")]
+        [TestCase(" ")]
+        public void GetOrEnlist_Throws_An_Exception_For_Null_Key(string key)
+	    {
+            Assert.Throws<ArgumentNullException>(
+             () => _transaction.GetOrEnlist(key, () => _mockEnlistedDependentTransaction.Object));
+        }
+
+        [Test]
+        public void GetOrEnlist_Throws_An_Exception_For_Null_Value()
+        {
+            Assert.Throws<ArgumentNullException>(
+              () => _transaction.GetOrEnlist(Key, null));
+        }
+
+        [Test]
+        public void GetOrEnlist_Throws_An_Exception_If_It_Was_Already_Disposed()
+        {
+            ((ITransaction)_transaction).Dispose();
+
+            var exception = Assert.Throws<ObjectDisposedException>(
+               () => _transaction.GetOrEnlist(Key, () => _mockEnlistedDependentTransaction.Object));
+
+            Assert.That(exception.ObjectName, Is.EqualTo(typeof(Transaction).Name));
+        }
+
+        [Test]
+	    public void GetOrEnlist_Returns_Value_For_Existing_Key()
+	    {
+            IDependentTransaction result = _transaction.GetOrEnlist(Key, () => null);
+
+	        Assert.That(result, Is.EqualTo(_mockEnlistedDependentTransaction.Object));
+	    }
+
+	    [Test]
+	    public void GetOrEnlist_Adds_Value_For_New_Key()
+	    {
+            string key = Guid.NewGuid().ToString();
+            var dependentTransaction = Mock.Of<IDependentTransaction>();
+
+            IDependentTransaction result = _transaction.GetOrEnlist(key, () => dependentTransaction);
+
+            Assert.That(result, Is.EqualTo(dependentTransaction));
         }
     }
 }

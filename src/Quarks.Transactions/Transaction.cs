@@ -10,6 +10,7 @@ namespace Quarks.Transactions
 	public sealed class Transaction : ITransaction
 	{
 	    private bool _disposed;
+        private readonly object _lock = new object();
         private readonly ConcurrentDictionary<string, IDependentTransaction> _dependentTransactions;
 
 		internal Transaction()
@@ -59,6 +60,8 @@ namespace Quarks.Transactions
 
             foreach (IDependentTransaction dependentTransaction in _dependentTransactions.Values)
 			{
+                cancellationToken.ThrowIfCancellationRequested();
+
                 await dependentTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             }
 		}
@@ -72,16 +75,34 @@ namespace Quarks.Transactions
 			_dependentTransactions.AddOrUpdate(key, dependentTransaction, (k,v) => dependentTransaction);
 		}
 
-		public static Transaction Current
-		{
-			get { return CurrentContext.Transaction; }
-			private set { CurrentContext.Transaction = value; }
-		}
+	    public IDependentTransaction GetOrEnlist(string key, Func<IDependentTransaction> valueCreator)
+	    {
+            if (string.IsNullOrWhiteSpace(key)) throw new ArgumentNullException(nameof(key));
+            if (valueCreator == null) throw new ArgumentNullException(nameof(valueCreator));
 
-	    private static ITransactionContext CurrentContext
-        {
-	        get { return TransactionContext.Current; }
+            ThrowIfDisposed();
+
+            IDependentTransaction current;
+            if (!_dependentTransactions.TryGetValue(key, out current))
+            {
+                lock (_lock)
+                {
+                    if (!_dependentTransactions.TryGetValue(key, out current))
+                    {
+                        current = valueCreator();
+                        _dependentTransactions.AddOrUpdate(key, current, (k, v) => current);
+                    }
+                }
+            }
+
+	        return current;
 	    }
+
+        public static Transaction Current
+		{
+			get { return Context.Transaction; }
+			private set { Context.Transaction = value; }
+		}
 
 		public static Transaction BeginTransaction()
 		{
@@ -93,7 +114,12 @@ namespace Quarks.Transactions
             return Current = new Transaction();
         }
 
-	    private void ThrowIfDisposed()
+        private static ITransactionContext Context
+        {
+            get { return TransactionContext.Current; }
+        }
+
+        private void ThrowIfDisposed()
 	    {
 	        if (_disposed)
                 throw new ObjectDisposedException(GetType().Name);
