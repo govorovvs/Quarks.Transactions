@@ -2,16 +2,20 @@
   "frameworks": {
     "net45": {
       "buildOptions": {
-        "define": [ "NET_45" ] 
+        "define": ["NET_45"]
       }
     },
     "netstandard1.3": {
       "dependencies": {
         "System.Collections.Concurrent": "4.3.0",
         "System.Runtime.InteropServices": "4.3.0",
-        "System.Threading": "4.3.0"
+        "System.Threading": "4.3.0",
+        "System.Collections": "4.3.0"
       }
     }
+  },
+  "dependencies": {
+    "Microsoft.Extensions.DependencyInjection.Abstractions": "1.1.0"
   },
   "packOptions": {
     "authors": [ "victor.govorov" ],
@@ -22,8 +26,8 @@
       "type": "git",
       "url": "https://github.com/govorovvs/Quarks.Transactions.git"
     },
-    "tags": [ "architecture", "transactions" ]
+    "tags": [ "quarks", "architecture", "transactions" ]
   },
   "title": "Quarks.Transactions",
-  "version": "2.3.2-*"
+  "version": "2.4.0-*"
 }

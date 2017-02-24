@@ -1,95 +1,141 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Quarks.Transactions.Impl;
+using Quarks.Transactions.Context;
 
 namespace Quarks.Transactions
 {
-	public sealed class Transaction
+	public sealed class Transaction : ITransaction
 	{
-		private static readonly object Lock = new object();
+	    private bool _disposed;
+        private readonly object _lock = new object();
+        private readonly ConcurrentDictionary<string, IDependentTransaction> _dependentTransactions;
 
 		internal Transaction()
 		{
-			if (Current != null)
-			{
-				throw new InvalidOperationException("Nested transactions aren't supported");
-			}
-
-			DependentTransactions = new ConcurrentDictionary<string, IDependentTransaction>();
-			Current = this;
+			_dependentTransactions = new ConcurrentDictionary<string, IDependentTransaction>();
+		    _disposed = false;
 		}
 
-		public IDictionary<string, IDependentTransaction> DependentTransactions { get; }
+#if NET_45
+        public IDictionary<string, IDependentTransaction> DependentTransactions => _dependentTransactions;
+#else
+        public IReadOnlyDictionary<string, IDependentTransaction> DependentTransactions => _dependentTransactions;
+#endif
 
-		public void Dispose()
+        void IDisposable.Dispose()
 		{
-			Current = null;
+            if (_disposed)
+                return;
 
-			foreach (IDependentTransaction dependentTransaction in DependentTransactions.Values)
+            Current = null;
+
+            var exceptions = new List<Exception>();
+			foreach (IDependentTransaction dependentTransaction in _dependentTransactions.Values)
 				try
 				{
 					dependentTransaction.Dispose();
 				}
-				catch
+				catch(Exception exception)
 				{
+                    exceptions.Add(exception);
 				}
+
+            if (exceptions.Count != 0)
+                throw new AggregateException(exceptions);
+
+            _disposed = true;
 		}
 
-		public async Task CommitAsync(CancellationToken cancellationToken)
+	    void ITransaction.Commit()
+	    {
+	        try
+	        {
+                ((ITransaction)this).CommitAsync(CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
+            }
+	        catch (AggregateException ex)
+	        {
+	            if (ex.InnerExceptions.Count == 1)
+	            {
+                    ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                }
+
+	            throw;
+	        }	        
+	    }
+
+		async Task ITransaction.CommitAsync(CancellationToken cancellationToken)
 		{
-			foreach (IDependentTransaction dependentTransaction in DependentTransactions.Values)
+            ThrowIfDisposed();
+
+            foreach (IDependentTransaction dependentTransaction in _dependentTransactions.Values)
 			{
-				await dependentTransaction.CommitAsync(cancellationToken);
-			}
+                cancellationToken.ThrowIfCancellationRequested();
+
+                await dependentTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+            }
 		}
 
 		public void Enlist(string key, IDependentTransaction dependentTransaction)
 		{
-			if (dependentTransaction == null)
-				throw new ArgumentNullException(nameof(dependentTransaction));
+            if (string.IsNullOrWhiteSpace(key)) throw new ArgumentNullException(nameof(key));
+            if (dependentTransaction == null) throw new ArgumentNullException(nameof(dependentTransaction));
 
-			DependentTransactions.Add(key, dependentTransaction);
+            ThrowIfDisposed();
+			_dependentTransactions.AddOrUpdate(key, dependentTransaction, (k,v) => dependentTransaction);
 		}
 
-		public static Transaction Current
+	    public IDependentTransaction GetOrEnlist(string key, Func<IDependentTransaction> valueCreator)
+	    {
+            if (string.IsNullOrWhiteSpace(key)) throw new ArgumentNullException(nameof(key));
+            if (valueCreator == null) throw new ArgumentNullException(nameof(valueCreator));
+
+            ThrowIfDisposed();
+
+            IDependentTransaction current;
+            if (!_dependentTransactions.TryGetValue(key, out current))
+            {
+                lock (_lock)
+                {
+                    if (!_dependentTransactions.TryGetValue(key, out current))
+                    {
+                        current = valueCreator();
+                        _dependentTransactions.AddOrUpdate(key, current, (k, v) => current);
+                    }
+                }
+            }
+
+	        return current;
+	    }
+
+        public static Transaction Current
 		{
-			get { return Context.Current; }
-			private set { Context.Current = value; }
+			get { return Context.Transaction; }
+			private set { Context.Transaction = value; }
 		}
 
-		public static ITransactionContext Context
+		public static Transaction BeginTransaction()
 		{
-			get { return TransactionContext.Current; }
-			set { TransactionContext.Current = value; }
-		}
+            if (Current != null)
+            {
+                throw new InvalidOperationException("Nested transactions aren't supported");
+            }
 
-		public static ITransaction BeginTransaction()
-		{
-			Transaction current = GetOrCreateCurrent();
-			return new NestedTransaction(current);
-		}
+            return Current = new Transaction();
+        }
 
-		internal int CommitCount;
+        private static ITransactionContext Context
+        {
+            get { return TransactionContext.Current; }
+        }
 
-		internal int DisposeCount;
-
-		internal static Transaction GetOrCreateCurrent()
-		{
-			if (Current == null)
-			{
-				lock (Lock)
-				{
-					if (Current == null)
-					{
-						Current = new Transaction();
-					}
-				}
-			}
-
-			return Current;
-		}
+        private void ThrowIfDisposed()
+	    {
+	        if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
+	    }
 	}
 }

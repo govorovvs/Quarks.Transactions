@@ -12,132 +12,185 @@ namespace Quarks.Transactions.Tests
 		private CancellationToken _cancellationToken;
 		private Transaction _transaction;
 		private Mock<IDependentTransaction> _mockEnlistedDependentTransaction;
+	    private const string Key = "key";
 
 		[SetUp]
 		public void SetUp()
 		{
-			_transaction = new Transaction();
+			_transaction = Transaction.BeginTransaction();
 			_cancellationToken = new CancellationTokenSource().Token;
 			_mockEnlistedDependentTransaction = new Mock<IDependentTransaction>();
-			_transaction.Enlist("key", _mockEnlistedDependentTransaction.Object);
+			_transaction.Enlist(Key, _mockEnlistedDependentTransaction.Object);
 		}
 
 		[TearDown]
 		public void TearDown()
 		{
-			_transaction.Dispose();
+			((ITransaction)_transaction).Dispose();
 			_transaction = null;
 		}
 
 		[Test]
 		public void Creating_New_Transaction_In_Scope_Of_Other_One_Throws_An_Exception()
 		{
-			Assert.That(() => new Transaction(), Throws.TypeOf<InvalidOperationException>());
+			Assert.That(Transaction.BeginTransaction, Throws.TypeOf<InvalidOperationException>());
 		}
 
 		[Test]
-		public async Task Commits_Dependent_Transactions_On_Commit()
+		public async Task Commits_Dependent_Transactions_On_Async_Commit()
 		{
 			_mockEnlistedDependentTransaction
 				.Setup(x => x.CommitAsync(_cancellationToken))
 				.Returns(Task.CompletedTask);
 			
-			await _transaction.CommitAsync(_cancellationToken);
+			await ((ITransaction)_transaction).CommitAsync(_cancellationToken);
 
 			_mockEnlistedDependentTransaction.VerifyAll();
 		}
 
-		[Test]
+        [Test]
+        public void Commits_Dependent_Transactions_On_Commit()
+        {
+            _mockEnlistedDependentTransaction
+                .Setup(x => x.CommitAsync(CancellationToken.None))
+                .Returns(Task.CompletedTask);
+
+            ((ITransaction)_transaction).Commit();
+
+            _mockEnlistedDependentTransaction.VerifyAll();
+        }
+
+        [Test]
 		public void Disposes_Dependent_Transactions_On_Dispose()
 		{
 			_mockEnlistedDependentTransaction.Setup(x => x.Dispose());
 
-			_transaction.Dispose();
-
-			_mockEnlistedDependentTransaction.VerifyAll();
-		}
-
-		[Test]
-		public void Dispose_Catches_Dependent_Transaction_Exception()
-		{
-			_mockEnlistedDependentTransaction
-				.Setup(x => x.Dispose())
-				.Throws<Exception>();
-
-			Assert.DoesNotThrow(() => _transaction.Dispose());
-		}
-
-		[Test]
-		public async Task Commit_If_All_NestedTransaction_Have_Been_Committed()
-		{
-			_mockEnlistedDependentTransaction
-				.Setup(x => x.CommitAsync(_cancellationToken))
-				.Returns(Task.CompletedTask);
-
-			using (ITransaction transaction1 = Transaction.BeginTransaction())
-			{
-				using (ITransaction transaction2 = Transaction.BeginTransaction())
-				{
-					await transaction2.CommitAsync(_cancellationToken);
-				}
-
-				await transaction1.CommitAsync(_cancellationToken);
-			}
-
-			_mockEnlistedDependentTransaction.VerifyAll();
-		}
-
-		[Test]
-		public async Task Dispose_If_Any_Of_NestedTransaction_Has_Been_Disposed()
-		{
-			_mockEnlistedDependentTransaction.Setup(x => x.Dispose());
-
-			using (ITransaction transaction1 = Transaction.BeginTransaction())
-			{
-				Assert.That(transaction1, Is.Not.Null);
-
-				using (ITransaction transaction2 = Transaction.BeginTransaction())
-				{
-					await transaction2.CommitAsync(_cancellationToken);
-				}
-			}
-
-			_mockEnlistedDependentTransaction.VerifyAll();
-		}
-
-		[Test]
-		public async Task Dispose_If_Any_Of_NestedTransaction_Has_Not_Been_Committed_Due_To_Exception()
-		{
-			_mockEnlistedDependentTransaction.Setup(x => x.Dispose());
-
-			using (ITransaction transaction1 = Transaction.BeginTransaction())
-			{
-				try
-				{
-					using (ITransaction transaction2 = Transaction.BeginTransaction())
-					{
-						Assert.That(transaction2, Is.Not.Null);
-
-						throw new Exception();
-					}
-				}
-				catch
-				{
-					await transaction1.CommitAsync(_cancellationToken);
-				}
-			}
+            ((ITransaction)_transaction).Dispose();
 
 			_mockEnlistedDependentTransaction.VerifyAll();
 		}
 
 	    [Test]
-	    public void Context_Set()
+	    public void Disposes_Ones()
 	    {
-	        ITransactionContext context = Mock.Of<ITransactionContext>();
+            _mockEnlistedDependentTransaction.Setup(x => x.Dispose());
 
-	        Transaction.Context = context;
+            ((ITransaction)_transaction).Dispose();
+            ((ITransaction)_transaction).Dispose();
 
-            Assert.That(Transaction.Context, Is.SameAs(context));
+            _mockEnlistedDependentTransaction.Verify(x => x.Dispose(), Times.Once);
+        }
+
+		[Test]
+		public void Dispose_Aggregates_Dependent_Transactions_Exceptions()
+		{
+            var exception = new Exception();
+		    _mockEnlistedDependentTransaction
+		        .Setup(x => x.Dispose())
+		        .Throws(exception);
+
+		    var result =
+		        Assert.Throws<AggregateException>(() => ((ITransaction)_transaction).Dispose());
+            Assert.That(result.InnerExceptions, Is.EquivalentTo(new[] {exception}));
+
+            _mockEnlistedDependentTransaction.Reset();
+		}
+
+	    [Test]
+	    public void Commit_Throws_An_Exception_If_It_Was_Already_Disposed()
+	    {
+	        ((ITransaction)_transaction).Dispose();
+
+	        var exception = Assert.ThrowsAsync<ObjectDisposedException>(
+	            () => ((ITransaction) _transaction).CommitAsync(_cancellationToken));
+
+            Assert.That(exception.ObjectName, Is.EqualTo(typeof(Transaction).Name));
 	    }
-	}
+
+	    [Test]
+	    public void Enlist_Throws_An_Exception_If_It_Was_Already_Disposed()
+	    {
+            ((ITransaction)_transaction).Dispose();
+
+            var exception = Assert.Throws<ObjectDisposedException>(
+               () => _transaction.Enlist(Key, _mockEnlistedDependentTransaction.Object));
+
+            Assert.That(exception.ObjectName, Is.EqualTo(typeof(Transaction).Name));
+        }
+
+        [TestCase(null)]
+        [TestCase("")]
+        [TestCase(" ")]
+        public void Enlist_Throws_An_Exception_For_Null_Key(string key)
+	    {
+            Assert.Throws<ArgumentNullException>(
+              () => _transaction.Enlist(key, _mockEnlistedDependentTransaction.Object));
+        }
+
+        [Test]
+        public void Enlist_Throws_An_Exception_For_Null_Value()
+        {
+            Assert.Throws<ArgumentNullException>(
+              () => _transaction.Enlist(Key, null));
+        }
+
+	    [Test]
+	    public void Enlist_Updates_Value_For_Existing_Key()
+	    {
+	        string key = Guid.NewGuid().ToString();
+	        var dependentTransaction1 = Mock.Of<IDependentTransaction>();
+            var dependentTransaction2 = Mock.Of<IDependentTransaction>();
+            _transaction.Enlist(key, dependentTransaction1);
+
+            _transaction.Enlist(key, dependentTransaction2);
+
+            Assert.That(_transaction.DependentTransactions[key], Is.SameAs(dependentTransaction2));
+        }
+
+        [TestCase(null)]
+        [TestCase("")]
+        [TestCase(" ")]
+        public void GetOrEnlist_Throws_An_Exception_For_Null_Key(string key)
+	    {
+            Assert.Throws<ArgumentNullException>(
+             () => _transaction.GetOrEnlist(key, () => _mockEnlistedDependentTransaction.Object));
+        }
+
+        [Test]
+        public void GetOrEnlist_Throws_An_Exception_For_Null_Value()
+        {
+            Assert.Throws<ArgumentNullException>(
+              () => _transaction.GetOrEnlist(Key, null));
+        }
+
+        [Test]
+        public void GetOrEnlist_Throws_An_Exception_If_It_Was_Already_Disposed()
+        {
+            ((ITransaction)_transaction).Dispose();
+
+            var exception = Assert.Throws<ObjectDisposedException>(
+               () => _transaction.GetOrEnlist(Key, () => _mockEnlistedDependentTransaction.Object));
+
+            Assert.That(exception.ObjectName, Is.EqualTo(typeof(Transaction).Name));
+        }
+
+        [Test]
+	    public void GetOrEnlist_Returns_Value_For_Existing_Key()
+	    {
+            IDependentTransaction result = _transaction.GetOrEnlist(Key, () => null);
+
+	        Assert.That(result, Is.EqualTo(_mockEnlistedDependentTransaction.Object));
+	    }
+
+	    [Test]
+	    public void GetOrEnlist_Adds_Value_For_New_Key()
+	    {
+            string key = Guid.NewGuid().ToString();
+            var dependentTransaction = Mock.Of<IDependentTransaction>();
+
+            IDependentTransaction result = _transaction.GetOrEnlist(key, () => dependentTransaction);
+
+            Assert.That(result, Is.EqualTo(dependentTransaction));
+        }
+    }
 }

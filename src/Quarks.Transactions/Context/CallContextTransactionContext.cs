@@ -2,13 +2,13 @@
 
 using System.Runtime.Remoting.Messaging;
 
-namespace Quarks.Transactions.Impl
+namespace Quarks.Transactions.Context
 {
-	public class CallContextTransactionContext : ITransactionContext
+	internal sealed class CallContextTransactionContext : ITransactionContext
 	{
 		private static readonly string Key = typeof(Transaction).FullName;
 
-		public Transaction Current
+		public Transaction Transaction
 		{
 			get { return (Transaction) CallContext.LogicalGetData(Key); }
 			set { CallContext.LogicalSetData(Key, value); }

@@ -89,6 +89,8 @@ Task("Pack")
 		{
 			PackProject(project);
 		}
+
+		DeleteFiles(PACKAGES_DIR + "/*.symbols.nupkg");
 	}
 );
 
@@ -100,8 +102,6 @@ Task("Publish")
 	.IsDependentOn("Pack")
 	.Does(() =>
 	{
-		DeleteFiles(PACKAGES_DIR + "/*.symbols.nupkg");
-
 		string[] packages = System.IO.Directory.GetFiles(PACKAGES_DIR, "*.nupkg");
 
 		foreach(var package in packages)
