@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Quarks.Transactions.Context;
@@ -51,7 +52,19 @@ namespace Quarks.Transactions
 
 	    void ITransaction.Commit()
 	    {
-	        ((ITransaction)this).CommitAsync(CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
+	        try
+	        {
+                ((ITransaction)this).CommitAsync(CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
+            }
+	        catch (AggregateException ex)
+	        {
+	            if (ex.InnerExceptions.Count == 1)
+	            {
+                    ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                }
+
+	            throw;
+	        }	        
 	    }
 
 		async Task ITransaction.CommitAsync(CancellationToken cancellationToken)
