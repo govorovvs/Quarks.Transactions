@@ -120,7 +120,6 @@ void BuildProject(string projectPath)
 	var settings = new DotNetCoreBuildSettings
 	{
 		Configuration = configuration,
-		Verbose = true,
 		NoIncremental = true
 	};
 
@@ -132,7 +131,6 @@ void TestProject(string projectPath)
 	var settings = new DotNetCoreTestSettings 
 	{
 		Configuration = configuration,
-		Verbose = true,
 		NoBuild = false
 	};
 
@@ -144,7 +142,6 @@ void PackProject(string projectPath)
 	var settings = new DotNetCorePackSettings 
 	{
 		Configuration = configuration,
-		Verbose = true,
 		OutputDirectory = PACKAGES_DIR
 	};
 

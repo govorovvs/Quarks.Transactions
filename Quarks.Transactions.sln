@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26228.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{38B76D98-5A33-4F99-A6BC-38822FEB96CD}"
 	ProjectSection(SolutionItems) = preProject
@@ -9,7 +9,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		build.cake = build.cake
 		build.cmd = build.cmd
 		build.ps1 = build.ps1
-		global.json = global.json
 		logo.png = logo.png
 		README.md = README.md
 	EndProjectSection
@@ -19,9 +18,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{9A49DDE2
 		tools\packages.config = tools\packages.config
 	EndProjectSection
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Quarks.Transactions", "src\Quarks.Transactions\Quarks.Transactions.xproj", "{932099FF-D698-44C5-80EF-16325DB4A7C0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Quarks.Transactions", "src\Quarks.Transactions\Quarks.Transactions.csproj", "{932099FF-D698-44C5-80EF-16325DB4A7C0}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Quarks.Transactions.Tests", "tests\Quarks.Transactions.Tests\Quarks.Transactions.Tests.xproj", "{92CBD769-1640-424F-BD5F-BE1EAF646C25}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Quarks.Transactions.Tests", "tests\Quarks.Transactions.Tests\Quarks.Transactions.Tests.csproj", "{92CBD769-1640-424F-BD5F-BE1EAF646C25}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
