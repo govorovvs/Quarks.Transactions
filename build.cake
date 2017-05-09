@@ -12,16 +12,15 @@ var nugetApiKey =  Argument("apikey", "");
 //////////////////////////////////////////////////////////////////////
 
 string SOLUTION_DIR = Context.Environment.WorkingDirectory.FullPath;
+string SOLUTION_PATH = System.IO.Directory.GetFiles(SOLUTION_DIR, "*.sln").Single();
 string TOOLS_DIR = SOLUTION_DIR + "/tools";
 string PACKAGES_DIR = SOLUTION_DIR + "/packages";
 string SOURCE_DIR = SOLUTION_DIR + "/src";
 string TESTS_DIR = SOLUTION_DIR + "/tests";
 string ARTIFACTS_DIR = SOLUTION_DIR + "/artifacts";
 
+string NUNIT_EXE_PATH = TOOLS_DIR + "/NUnit.ConsoleRunner/tools/nunit3-console.exe";
 string NUGET_EXE_PATH = TOOLS_DIR + "/nuget.exe";
-
-string[] projects = System.IO.Directory.GetDirectories(SOURCE_DIR);
-string[] testProjects = System.IO.Directory.GetDirectories(TESTS_DIR);
 
 //////////////////////////////////////////////////////////////////////
 // INITIALIZE
@@ -41,7 +40,11 @@ Task("Initialize")
 Task("Restore")
     .Does(() =>
     {
-        DotNetCoreRestore();
+		NuGetRestore(SOLUTION_PATH, 
+			new NuGetRestoreSettings 
+			{
+				ToolPath = NUGET_EXE_PATH
+			});
     }
 );
 
@@ -53,10 +56,11 @@ Task("Build")
 	.IsDependentOn("Restore")
 	.Does(() =>
 	{
-		foreach(var project in projects)
-		{
-			BuildProject(project);
-		}
+		MSBuild(SOLUTION_PATH, configurator =>
+			configurator.SetConfiguration(configuration)
+			.SetVerbosity(Verbosity.Normal)
+			.UseToolVersion(MSBuildToolVersion.VS2017)
+			.WithTarget("Build"));
 	}
 );
 
@@ -68,11 +72,17 @@ Task("Tests")
 	.IsDependentOn("Initialize")
 	.IsDependentOn("Build")
 	.Does(() =>
-	{
-		foreach(var project in testProjects)
+	{	
+		string pattern = TESTS_DIR + "/**/bin/" + configuration + "/**/Quarks*.Tests.dll";
+
+		NUnit3Settings settings = new NUnit3Settings 
 		{
-			TestProject(project);
-		}
+			ToolPath = NUNIT_EXE_PATH,
+			Agents = 1,
+			Results = ARTIFACTS_DIR + "/unit-tests.xml"
+		};
+
+		NUnit3(pattern, settings);
 	}
 );
 
@@ -81,16 +91,25 @@ Task("Tests")
 //////////////////////////////////////////////////////////////////////
 
 Task("Pack")
+	.IsDependentOn("Build")
 	.Does(() =>
 	{
-		CleanDirectories(PACKAGES_DIR);
+		CreateDirectory(PACKAGES_DIR);
+		CleanDirectory(PACKAGES_DIR);
+
+		string[] projects = System.IO.Directory.GetFiles(SOURCE_DIR, "*.csproj", SearchOption.AllDirectories);
 
 		foreach(var project in projects)
 		{
-			PackProject(project);
+			MSBuild(project, configurator =>
+				configurator.SetConfiguration(configuration)
+				.SetVerbosity(Verbosity.Normal)
+				.UseToolVersion(MSBuildToolVersion.VS2017)
+				.WithTarget("Pack"));
 		}
 
-		DeleteFiles(PACKAGES_DIR + "/*.symbols.nupkg");
+		string[] packages = System.IO.Directory.GetFiles(SOURCE_DIR, "*.nupkg", SearchOption.AllDirectories);
+		CopyFiles(packages, PACKAGES_DIR);
 	}
 );
 
@@ -114,30 +133,6 @@ Task("Publish")
 //////////////////////////////////////////////////////////////////////
 // HELPER METHODS 
 //////////////////////////////////////////////////////////////////////
-
-void BuildProject(string projectPath)
-{
-	var settings = new DotNetCoreBuildSettings
-	{
-		Configuration = configuration,
-		Verbose = true,
-		NoIncremental = true
-	};
-
-	DotNetCoreBuild(projectPath, settings);
-}
-
-void TestProject(string projectPath)
-{
-	var settings = new DotNetCoreTestSettings 
-	{
-		Configuration = configuration,
-		Verbose = true,
-		NoBuild = false
-	};
-
-	DotNetCoreTest(projectPath, settings);
-}
 
 void PackProject(string projectPath)
 {
