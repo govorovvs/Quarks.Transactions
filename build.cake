@@ -95,7 +95,7 @@ Task("Pack")
 	.Does(() =>
 	{
 		CreateDirectory(PACKAGES_DIR);
-		CleanDirectories(PACKAGES_DIR);
+		CleanDirectory(PACKAGES_DIR);
 
 		string[] projects = System.IO.Directory.GetFiles(SOURCE_DIR, "*.csproj", SearchOption.AllDirectories);
 
