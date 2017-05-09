@@ -40,11 +40,11 @@ Task("Initialize")
 Task("Restore")
     .Does(() =>
     {
-		NuGetRestore(SOLUTION_PATH, 
-			new NuGetRestoreSettings 
-			{
-				ToolPath = NUGET_EXE_PATH
-			});
+		MSBuild(SOLUTION_PATH, configurator =>
+			configurator.SetConfiguration(configuration)
+			.SetVerbosity(Verbosity.Normal)
+			.UseToolVersion(MSBuildToolVersion.VS2017)
+			.WithTarget("Restore"));
     }
 );
 

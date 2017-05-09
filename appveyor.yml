@@ -11,5 +11,5 @@ build_script:
 test: off
 deploy: off 
 artifacts:
-  - path: TestResult.xml
+  - path: 'artifacts\unit-tests.xml'
   - path: 'packages\*.nupkg'
