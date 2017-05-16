@@ -6,7 +6,7 @@ branches:
     - develop
 build_script:
   - build.cmd --target=build --configuration=Release
-  - build.cmd --target=tests --configuration=Release
+  - build.cmd --target=test --configuration=Release
   - build.cmd --target=pack --configuration=Release 
 test: off
 deploy: off 
