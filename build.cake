@@ -68,7 +68,7 @@ Task("Build")
 // UNIT TESTS
 //////////////////////////////////////////////////////////////////////
 
-Task("Test")
+Task("Tests")
 	.IsDependentOn("Initialize")
 	.IsDependentOn("Build")
 	.Does(() =>
