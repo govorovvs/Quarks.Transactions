@@ -1,6 +1,4 @@
-﻿#if !NET_45
-
-using System.Threading;
+﻿using System.Threading;
 
 namespace Quarks.Transactions.Context
 {
@@ -10,9 +8,8 @@ namespace Quarks.Transactions.Context
 
 		public Transaction Transaction
 		{
-			get { return _current.Value; }
-			set { _current.Value = value; }
+			get => _current.Value;
+		    set => _current.Value = value;
 		}
 	}
 }
-#endif

@@ -20,11 +20,7 @@ namespace Quarks.Transactions
 		    _disposed = false;
 		}
 
-#if NET_45
-        public IDictionary<string, IDependentTransaction> DependentTransactions => _dependentTransactions;
-#else
         public IReadOnlyDictionary<string, IDependentTransaction> DependentTransactions => _dependentTransactions;
-#endif
 
         void IDisposable.Dispose()
 		{
